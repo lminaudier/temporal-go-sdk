@@ -331,7 +331,7 @@ func waitServerReady(ctx context.Context, options client.Options) (client.Client
 	var returnedClient client.Client
 	lastErr := retryFor(600, 100*time.Millisecond, func() error {
 		var err error
-		returnedClient, err = client.Dial(options)
+		returnedClient, err = client.Dial(ctx, options)
 		return err
 	})
 	if lastErr != nil {

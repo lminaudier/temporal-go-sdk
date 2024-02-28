@@ -939,15 +939,15 @@ func (aw *AggregatedWorker) RegisterActivityWithOptions(a interface{}, options R
 }
 
 // Start the worker in a non-blocking fashion.
-func (aw *AggregatedWorker) Start() error {
+func (aw *AggregatedWorker) Start(ctx context.Context) error {
 	aw.assertNotStopped()
 	if err := initBinaryChecksum(); err != nil {
 		return fmt.Errorf("failed to get executable checksum: %v", err)
-	} else if err = aw.client.ensureInitialized(); err != nil {
+	} else if err = aw.client.ensureInitialized(ctx); err != nil {
 		return err
 	}
 	// Populate the capabilities. This should be the only time it is written too.
-	capabilities, err := aw.client.loadCapabilities()
+	capabilities, err := aw.client.loadCapabilities(ctx)
 	if err != nil {
 		return err
 	}
@@ -1081,8 +1081,8 @@ func getBinaryChecksum() string {
 // Pass any other `<-chan interface{}` and Run will wait for signal from that channel.
 // Returns error if the worker fails to start or there is a fatal error
 // during execution.
-func (aw *AggregatedWorker) Run(interruptCh <-chan interface{}) error {
-	if err := aw.Start(); err != nil {
+func (aw *AggregatedWorker) Run(ctx context.Context, interruptCh <-chan interface{}) error {
+	if err := aw.Start(ctx); err != nil {
 		return err
 	}
 	select {

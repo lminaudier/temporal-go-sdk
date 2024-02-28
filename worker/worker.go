@@ -48,7 +48,7 @@ type (
 		//
 		// Note, this will only return errors on start. To catch errors during run,
 		// use Run() instead or set Options.OnFatalError.
-		Start() error
+		Start(ctx context.Context) error
 
 		// Run the worker in a blocking fashion. Stop the worker when interruptCh receives signal.
 		// Pass worker.InterruptCh() to stop the worker with SIGINT or SIGTERM.
@@ -61,7 +61,7 @@ type (
 		// manually Stop(). Otherwise a race can occur if shutdown occurs before the
 		// worker is started. This Run() call is only best if shutdown is initiated
 		// via the interrupt channel.
-		Run(interruptCh <-chan interface{}) error
+		Run(ctx context.Context, interruptCh <-chan interface{}) error
 
 		// Stop the worker.
 		//

@@ -667,14 +667,14 @@ var MetricsNopHandler = metrics.NopHandler
 // Dial creates an instance of a workflow client. This will attempt to connect
 // to the server eagerly and will return an error if the server is not
 // available.
-func Dial(options Options) (Client, error) {
-	return internal.DialClient(options)
+func Dial(ctx context.Context, options Options) (Client, error) {
+	return internal.DialClient(ctx, options)
 }
 
 // NewLazyClient creates an instance of a workflow client. Unlike Dial, this
 // will not eagerly connect to the server.
-func NewLazyClient(options Options) (Client, error) {
-	return internal.NewLazyClient(options)
+func NewLazyClient(ctx context.Context, options Options) (Client, error) {
+	return internal.NewLazyClient(ctx, options)
 }
 
 // NewClient creates an instance of a workflow client. This will attempt to
@@ -682,8 +682,8 @@ func NewLazyClient(options Options) (Client, error) {
 // available.
 //
 // Deprecated: Use Dial or NewLazyClient instead.
-func NewClient(options Options) (Client, error) {
-	return internal.NewClient(options)
+func NewClient(ctx context.Context, options Options) (Client, error) {
+	return internal.NewClient(ctx, options)
 }
 
 // NewClientFromExisting creates a new client using the same connection as the
@@ -697,8 +697,8 @@ func NewClient(options Options) (Client, error) {
 // connection if there are any other clients using the connection. All clients
 // associated with the existing client must call Close() and only the last one
 // actually performs the connection close.
-func NewClientFromExisting(existingClient Client, options Options) (Client, error) {
-	return internal.NewClientFromExisting(existingClient, options)
+func NewClientFromExisting(ctx context.Context, existingClient Client, options Options) (Client, error) {
+	return internal.NewClientFromExisting(ctx, existingClient, options)
 }
 
 // NewNamespaceClient creates an instance of a namespace client, to manage
