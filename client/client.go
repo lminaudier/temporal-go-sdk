@@ -667,13 +667,26 @@ var MetricsNopHandler = metrics.NopHandler
 // Dial creates an instance of a workflow client. This will attempt to connect
 // to the server eagerly and will return an error if the server is not
 // available.
-func Dial(ctx context.Context, options Options) (Client, error) {
+func Dial(options Options) (Client, error) {
+	return DialWithContext(context.Background(), options)
+}
+
+// DialWithContext creates an instance of a workflow client. This will attempt to
+// connect to the server eagerly and will return an error if the server is not
+// available.
+func DialWithContext(ctx context.Context, options Options) (Client, error) {
 	return internal.DialClient(ctx, options)
 }
 
 // NewLazyClient creates an instance of a workflow client. Unlike Dial, this
 // will not eagerly connect to the server.
-func NewLazyClient(ctx context.Context, options Options) (Client, error) {
+func NewLazyClient(options Options) (Client, error) {
+	return NewLazyClientWithContext(context.Background(), options)
+}
+
+// NewLazyClientWithContext creates an instance of a workflow client. Unlike
+// DialWithContext, this will not eagerly connect to the server.
+func NewLazyClientWithContext(ctx context.Context, options Options) (Client, error) {
 	return internal.NewLazyClient(ctx, options)
 }
 
@@ -682,8 +695,8 @@ func NewLazyClient(ctx context.Context, options Options) (Client, error) {
 // available.
 //
 // Deprecated: Use Dial or NewLazyClient instead.
-func NewClient(ctx context.Context, options Options) (Client, error) {
-	return internal.NewClient(ctx, options)
+func NewClient(options Options) (Client, error) {
+	return internal.NewClient(context.Background(), options)
 }
 
 // NewClientFromExisting creates a new client using the same connection as the
@@ -697,7 +710,22 @@ func NewClient(ctx context.Context, options Options) (Client, error) {
 // connection if there are any other clients using the connection. All clients
 // associated with the existing client must call Close() and only the last one
 // actually performs the connection close.
-func NewClientFromExisting(ctx context.Context, existingClient Client, options Options) (Client, error) {
+func NewClientFromExisting(existingClient Client, options Options) (Client, error) {
+	return NewClientFromExistingWithContext(context.Background(), existingClient, options)
+}
+
+// NewClientFromExistingWithContext creates a new client using the same
+// connection as the existing client. This means all options.ConnectionOptions
+// are ignored and options.HostPort is ignored. The existing client must have
+// been created from this package and cannot be wrapped. Currently, this always
+// attempts an eager connection even if the existing client was created with
+// NewLazyClient and has not made any calls yet.
+//
+// Close() on the resulting client may not necessarily close the underlying
+// connection if there are any other clients using the connection. All clients
+// associated with the existing client must call Close() and only the last one
+// actually performs the connection close.
+func NewClientFromExistingWithContext(ctx context.Context, existingClient Client, options Options) (Client, error) {
 	return internal.NewClientFromExisting(ctx, existingClient, options)
 }
 

@@ -116,7 +116,7 @@ func StartDevServer(ctx context.Context, options DevServerOptions) (*DevServer, 
 		return nil, fmt.Errorf("failed starting: %w", err)
 	}
 
-	returnedClient, err := waitServerReady(ctx, clientOptions)
+	returnedClient, err := waitServerReady(clientOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -327,11 +327,11 @@ func extractZip(r io.Reader, toExtract string, w io.Writer) error {
 
 // waitServerReady repeatedly attempts to dial the server with given options until it is ready or it is time to give up.
 // Returns a connected client created using the provided options.
-func waitServerReady(ctx context.Context, options client.Options) (client.Client, error) {
+func waitServerReady(options client.Options) (client.Client, error) {
 	var returnedClient client.Client
 	lastErr := retryFor(600, 100*time.Millisecond, func() error {
 		var err error
-		returnedClient, err = client.Dial(ctx, options)
+		returnedClient, err = client.Dial(options)
 		return err
 	})
 	if lastErr != nil {
