@@ -1147,8 +1147,31 @@ func (wc *WorkflowClient) OperatorService() operatorservice.OperatorServiceClien
 	return operatorservice.NewOperatorServiceClient(wc.conn)
 }
 
+type loadCapabilitiesConfig struct {
+	getSystemInfoTimeout time.Duration
+}
+
+var defaultLoadCapabilitiesOptions = loadCapabilitiesConfig{
+	getSystemInfoTimeout: getSystemInfoTimeout,
+}
+
+type loadCapabilitiesOption func(config *loadCapabilitiesConfig)
+
+func withGetSystemInfoTimeout(timeout time.Duration) loadCapabilitiesOption {
+	return func(config *loadCapabilitiesConfig) {
+		if timeout > 0 {
+			config.getSystemInfoTimeout = timeout
+		}
+	}
+}
+
 // Get capabilities, lazily fetching from server if not already obtained.
-func (wc *WorkflowClient) loadCapabilities() (*workflowservice.GetSystemInfoResponse_Capabilities, error) {
+func (wc *WorkflowClient) loadCapabilities(opts ...loadCapabilitiesOption) (*workflowservice.GetSystemInfoResponse_Capabilities, error) {
+	cfg := defaultLoadCapabilitiesOptions
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+
 	// While we want to memoize the result here, we take care not to lock during
 	// the call. This means that in racy situations where this is called multiple
 	// times at once, it may result in multiple calls. This is far more preferable
@@ -1162,7 +1185,7 @@ func (wc *WorkflowClient) loadCapabilities() (*workflowservice.GetSystemInfoResp
 	}
 
 	// Fetch the capabilities
-	ctx, cancel := context.WithTimeout(context.Background(), getSystemInfoTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.getSystemInfoTimeout)
 	defer cancel()
 	resp, err := wc.workflowService.GetSystemInfo(ctx, &workflowservice.GetSystemInfoRequest{})
 	// We ignore unimplemented

@@ -524,6 +524,10 @@ type (
 		// grpc.WithChainUnaryInterceptor.
 		DialOptions []grpc.DialOption
 
+		// GetSystemInfoTimeout controls the maximum amount of time
+		// a client will wait to get system info from the server.
+		GetSystemInfoTimeout time.Duration
+
 		// Hidden for use by client overloads.
 		disableEagerConnection bool
 
@@ -772,13 +776,13 @@ func newClient(options ClientOptions, existing *WorkflowClient) (Client, error) 
 	// the new connection. Otherwise, only load server capabilities eagerly if not
 	// disabled.
 	if existing != nil {
-		if client.capabilities, err = existing.loadCapabilities(); err != nil {
+		if client.capabilities, err = existing.loadCapabilities(withGetSystemInfoTimeout(options.ConnectionOptions.GetSystemInfoTimeout)); err != nil {
 			return nil, err
 		}
 		client.unclosedClients = existing.unclosedClients
 	} else {
 		if !options.ConnectionOptions.disableEagerConnection {
-			if _, err := client.loadCapabilities(); err != nil {
+			if _, err := client.loadCapabilities(withGetSystemInfoTimeout(options.ConnectionOptions.GetSystemInfoTimeout)); err != nil {
 				client.Close()
 				return nil, err
 			}
