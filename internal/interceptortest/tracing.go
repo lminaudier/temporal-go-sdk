@@ -150,7 +150,8 @@ func workflowInternal(ctx workflow.Context, waitSignal bool) (ret []string, err 
 	}
 
 	// Exec normal activity
-	ctx = workflow.WithActivityOptions(ctx, workflow.ActivityOptions{StartToCloseTimeout: 10 * time.Second})
+	startToCloseTimeout := 10 * time.Second
+	ctx = workflow.WithActivityOptions(ctx, workflow.ActivityOptions{StartToCloseTimeout: &startToCloseTimeout})
 	var temp []string
 	err = workflow.ExecuteActivity(ctx, testActivity).Get(ctx, &temp)
 	ret = append(ret, temp...)

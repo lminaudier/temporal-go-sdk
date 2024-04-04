@@ -1137,23 +1137,40 @@ func getRetryBackoffWithNowTime(p *RetryPolicy, attempt int32, err error, now, e
 		return noRetryBackoff
 	}
 
-	if p.MaximumAttempts > 0 && attempt >= p.MaximumAttempts {
+	maximumAttempts := int32(0)
+	initialInterval := 0 * time.Second
+	backoffCoefficient := float64(2.0)
+	maximumInterval := 0 * time.Second
+	if p.MaximumAttempts != nil {
+		maximumAttempts = *p.MaximumAttempts
+	}
+	if p.InitialInterval != nil {
+		initialInterval = *p.InitialInterval
+	}
+	if p.BackoffCoefficient != nil {
+		backoffCoefficient = *p.BackoffCoefficient
+	}
+	if p.MaximumInterval != nil {
+		maximumInterval = *p.MaximumInterval
+	}
+
+	if maximumAttempts > 0 && attempt >= maximumAttempts {
 		return noRetryBackoff // max attempt reached
 	}
 	// attempt starts from 1
-	backoffInterval := time.Duration(float64(p.InitialInterval) * math.Pow(p.BackoffCoefficient, float64(attempt-1)))
+	backoffInterval := time.Duration(float64(initialInterval) * math.Pow(backoffCoefficient, float64(attempt-1)))
 	if backoffInterval <= 0 {
 		// math.Pow() could overflow
-		if p.MaximumInterval > 0 {
-			backoffInterval = p.MaximumInterval
+		if maximumInterval > 0 {
+			backoffInterval = maximumInterval
 		} else {
 			return noRetryBackoff
 		}
 	}
 
-	if p.MaximumInterval > 0 && backoffInterval > p.MaximumInterval {
+	if maximumInterval > 0 && backoffInterval > maximumInterval {
 		// cap next interval to MaxInterval
-		backoffInterval = p.MaximumInterval
+		backoffInterval = maximumInterval
 	}
 
 	nextScheduleTime := now.Add(backoffInterval)

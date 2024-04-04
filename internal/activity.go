@@ -84,14 +84,14 @@ type (
 	ActivityOptions struct {
 		// TaskQueue that the activity needs to be scheduled on.
 		// optional: The default task queue with the same name as the workflow task queue.
-		TaskQueue string
+		TaskQueue *string
 
 		// ScheduleToCloseTimeout - Total time that a workflow is willing to wait for Activity to complete.
 		// ScheduleToCloseTimeout limits the total time of an Activity's execution including retries
 		// 		(use StartToCloseTimeout to limit the time of a single attempt).
 		// The zero value of this uses default value.
 		// Either this option or StartToClose is required: Defaults to unlimited.
-		ScheduleToCloseTimeout time.Duration
+		ScheduleToCloseTimeout *time.Duration
 
 		// ScheduleToStartTimeout - Time that the Activity Task can stay in the Task Queue before it is picked up by
 		// a Worker. Do not specify this timeout unless using host specific Task Queues for Activity Tasks are being
@@ -99,31 +99,30 @@ type (
 		// better to rely on the default value.
 		// ScheduleToStartTimeout is always non-retryable. Retrying after this timeout doesn't make sense as it would
 		// just put the Activity Task back into the same Task Queue.
-		// If ScheduleToClose is not provided then this timeout is required.
 		// Optional: Defaults to unlimited.
-		ScheduleToStartTimeout time.Duration
+		ScheduleToStartTimeout *time.Duration
 
 		// StartToCloseTimeout - Maximum time of a single Activity execution attempt.
 		// Note that the Temporal Server doesn't detect Worker process failures directly. It relies on this timeout
 		// to detect that an Activity that didn't complete on time. So this timeout should be as short as the longest
 		// possible execution of the Activity body. Potentially long running Activities must specify HeartbeatTimeout
 		// and call Activity.RecordHeartbeat(ctx, "my-heartbeat") periodically for timely failure detection.
-		// If ScheduleToClose is not provided then this timeout is required: Defaults to the ScheduleToCloseTimeout value.
-		StartToCloseTimeout time.Duration
+		// Either this option or ScheduleToClose is required: Defaults to the ScheduleToCloseTimeout value.
+		StartToCloseTimeout *time.Duration
 
 		// HeartbeatTimeout - Heartbeat interval. Activity must call Activity.RecordHeartbeat(ctx, "my-heartbeat")
 		// before this interval passes after the last heartbeat or the Activity starts.
-		HeartbeatTimeout time.Duration
+		HeartbeatTimeout *time.Duration
 
 		// WaitForCancellation - Whether to wait for canceled activity to be completed(
 		// activity can be failed, completed, cancel accepted)
 		// Optional: default false
-		WaitForCancellation bool
+		WaitForCancellation *bool
 
 		// ActivityID - Business level activity ID, this is not needed for most of the cases if you have
 		// to specify this then talk to temporal team. This is something will be done in future.
 		// Optional: default empty string
-		ActivityID string
+		ActivityID *string
 
 		// RetryPolicy specifies how to retry an Activity if an error occurs.
 		// More details are available at docs.temporal.io.
@@ -144,12 +143,12 @@ type (
 		// Eager activity execution means the server returns requested eager
 		// activities directly from the workflow task back to this worker which is
 		// faster than non-eager which may be dispatched to a separate worker.
-		DisableEagerExecution bool
+		DisableEagerExecution *bool
 
 		// VersioningIntent specifies whether this activity should run on a worker with a compatible
 		// build ID or not. See temporal.VersioningIntent.
 		// WARNING: Worker versioning is currently experimental
-		VersioningIntent VersioningIntent
+		VersioningIntent *VersioningIntent
 	}
 
 	// LocalActivityOptions stores local activity specific parameters that will be stored inside of a context.

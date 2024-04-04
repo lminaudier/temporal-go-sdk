@@ -229,41 +229,41 @@ type (
 	ChildWorkflowOptions struct {
 		// Namespace of the child workflow.
 		// Optional: the current workflow (parent)'s namespace will be used if this is not provided.
-		Namespace string
+		Namespace *string
 
 		// WorkflowID of the child workflow to be scheduled.
 		// Optional: an auto generated workflowID will be used if this is not provided.
-		WorkflowID string
+		WorkflowID *string
 
 		// TaskQueue that the child workflow needs to be scheduled on.
 		// Optional: the parent workflow task queue will be used if this is not provided.
-		TaskQueue string
+		TaskQueue *string
 
 		// WorkflowExecutionTimeout - The end to end timeout for the child workflow execution including retries
 		// and continue as new.
 		// Optional: defaults to unlimited.
-		WorkflowExecutionTimeout time.Duration
+		WorkflowExecutionTimeout *time.Duration
 
 		// WorkflowRunTimeout - The timeout for a single run of the child workflow execution. Each retry or
 		// continue as new should obey this timeout. Use WorkflowExecutionTimeout to specify how long the parent
 		// is willing to wait for the child completion.
 		// Optional: defaults to WorkflowExecutionTimeout
-		WorkflowRunTimeout time.Duration
+		WorkflowRunTimeout *time.Duration
 
 		// WorkflowTaskTimeout - Maximum execution time of a single Workflow Task. In the majority of cases there is
 		// no need to change this timeout. Note that this timeout is not related to the overall Workflow duration in
 		// any way. It defines for how long the Workflow can get blocked in the case of a Workflow Worker crash.
 		// Default is 10 seconds. Maximum value allowed by the Temporal Server is 1 minute.
-		WorkflowTaskTimeout time.Duration
+		WorkflowTaskTimeout *time.Duration
 
 		// WaitForCancellation - Whether to wait for canceled child workflow to be ended (child workflow can be ended
 		// as: completed/failed/timedout/terminated/canceled)
 		// Optional: default false
-		WaitForCancellation bool
+		WaitForCancellation *bool
 
 		// WorkflowIDReusePolicy - Whether server allow reuse of workflow ID, can be useful
 		// for dedup logic if set to WorkflowIdReusePolicyRejectDuplicate
-		WorkflowIDReusePolicy enumspb.WorkflowIdReusePolicy
+		WorkflowIDReusePolicy *enumspb.WorkflowIdReusePolicy
 
 		// RetryPolicy specify how to retry child workflow if error happens.
 		// Optional: default is no retry
@@ -284,7 +284,7 @@ type (
 		// │ │ │ │ │
 		// │ │ │ │ │
 		// * * * * *
-		CronSchedule string
+		CronSchedule *string
 
 		// Memo - Optional non-indexed info that will be shown in list workflow.
 		Memo map[string]interface{}
@@ -296,12 +296,12 @@ type (
 
 		// ParentClosePolicy - Optional policy to decide what to do for the child.
 		// Default is Terminate (if onboarded to this feature)
-		ParentClosePolicy enumspb.ParentClosePolicy
+		ParentClosePolicy *enumspb.ParentClosePolicy
 
 		// VersioningIntent specifies whether this child workflow should run on a worker with a
 		// compatible build ID or not. See VersioningIntent.
 		// WARNING: Worker versioning is currently experimental
-		VersioningIntent VersioningIntent
+		VersioningIntent *VersioningIntent
 	}
 
 	// RegisterWorkflowOptions consists of options for registering a workflow
@@ -1289,24 +1289,42 @@ func (wc *workflowEnvironmentInterceptor) UpsertMemo(ctx Context, memo map[strin
 func WithChildWorkflowOptions(ctx Context, cwo ChildWorkflowOptions) Context {
 	ctx1 := setWorkflowEnvOptionsIfNotExist(ctx)
 	wfOptions := getWorkflowEnvOptions(ctx1)
-	if len(cwo.Namespace) > 0 {
-		wfOptions.Namespace = cwo.Namespace
+	if cwo.Namespace != nil && len(*cwo.Namespace) > 0 {
+		wfOptions.Namespace = *cwo.Namespace
 	}
-	if len(cwo.TaskQueue) > 0 {
-		wfOptions.TaskQueueName = cwo.TaskQueue
+	if cwo.TaskQueue != nil && len(*cwo.TaskQueue) > 0 {
+		wfOptions.TaskQueueName = *cwo.TaskQueue
 	}
-	wfOptions.WorkflowID = cwo.WorkflowID
-	wfOptions.WorkflowExecutionTimeout = cwo.WorkflowExecutionTimeout
-	wfOptions.WorkflowRunTimeout = cwo.WorkflowRunTimeout
-	wfOptions.WorkflowTaskTimeout = cwo.WorkflowTaskTimeout
-	wfOptions.WaitForCancellation = cwo.WaitForCancellation
-	wfOptions.WorkflowIDReusePolicy = cwo.WorkflowIDReusePolicy
+	if cwo.WorkflowID != nil && len(*cwo.WorkflowID) > 0 {
+		wfOptions.WorkflowID = *cwo.WorkflowID
+	}
+	if cwo.WorkflowExecutionTimeout != nil {
+		wfOptions.WorkflowExecutionTimeout = *cwo.WorkflowExecutionTimeout
+	}
+	if cwo.WorkflowRunTimeout != nil {
+		wfOptions.WorkflowRunTimeout = *cwo.WorkflowRunTimeout
+	}
+	if cwo.WorkflowTaskTimeout != nil {
+		wfOptions.WorkflowTaskTimeout = *cwo.WorkflowTaskTimeout
+	}
+	if cwo.WaitForCancellation != nil {
+		wfOptions.WaitForCancellation = *cwo.WaitForCancellation
+	}
+	if cwo.WorkflowIDReusePolicy != nil {
+		wfOptions.WorkflowIDReusePolicy = *cwo.WorkflowIDReusePolicy
+	}
 	wfOptions.RetryPolicy = convertToPBRetryPolicy(cwo.RetryPolicy)
-	wfOptions.CronSchedule = cwo.CronSchedule
+	if cwo.CronSchedule != nil && len(*cwo.CronSchedule) > 0 {
+		wfOptions.CronSchedule = *cwo.CronSchedule
+	}
 	wfOptions.Memo = cwo.Memo
 	wfOptions.SearchAttributes = cwo.SearchAttributes
-	wfOptions.ParentClosePolicy = cwo.ParentClosePolicy
-	wfOptions.VersioningIntent = cwo.VersioningIntent
+	if cwo.ParentClosePolicy != nil {
+		wfOptions.ParentClosePolicy = *cwo.ParentClosePolicy
+	}
+	if cwo.VersioningIntent != nil {
+		wfOptions.VersioningIntent = *cwo.VersioningIntent
+	}
 
 	return ctx1
 }
@@ -1317,21 +1335,22 @@ func GetChildWorkflowOptions(ctx Context) ChildWorkflowOptions {
 	if opts == nil {
 		return ChildWorkflowOptions{}
 	}
+
 	return ChildWorkflowOptions{
-		Namespace:                opts.Namespace,
-		WorkflowID:               opts.WorkflowID,
-		TaskQueue:                opts.TaskQueueName,
-		WorkflowExecutionTimeout: opts.WorkflowExecutionTimeout,
-		WorkflowRunTimeout:       opts.WorkflowRunTimeout,
-		WorkflowTaskTimeout:      opts.WorkflowTaskTimeout,
-		WaitForCancellation:      opts.WaitForCancellation,
-		WorkflowIDReusePolicy:    opts.WorkflowIDReusePolicy,
+		Namespace:                &opts.Namespace,
+		WorkflowID:               &opts.WorkflowID,
+		TaskQueue:                &opts.TaskQueueName,
+		WorkflowExecutionTimeout: &opts.WorkflowExecutionTimeout,
+		WorkflowRunTimeout:       &opts.WorkflowRunTimeout,
+		WorkflowTaskTimeout:      &opts.WorkflowTaskTimeout,
+		WaitForCancellation:      &opts.WaitForCancellation,
+		WorkflowIDReusePolicy:    &opts.WorkflowIDReusePolicy,
 		RetryPolicy:              convertFromPBRetryPolicy(opts.RetryPolicy),
-		CronSchedule:             opts.CronSchedule,
+		CronSchedule:             &opts.CronSchedule,
 		Memo:                     opts.Memo,
 		SearchAttributes:         opts.SearchAttributes,
-		ParentClosePolicy:        opts.ParentClosePolicy,
-		VersioningIntent:         opts.VersioningIntent,
+		ParentClosePolicy:        &opts.ParentClosePolicy,
+		VersioningIntent:         &opts.VersioningIntent,
 	}
 }
 
@@ -1779,18 +1798,34 @@ func WithActivityOptions(ctx Context, options ActivityOptions) Context {
 	ctx1 := setActivityParametersIfNotExist(ctx)
 	eap := getActivityOptions(ctx1)
 
-	if len(options.TaskQueue) > 0 {
-		eap.TaskQueueName = options.TaskQueue
+	if options.TaskQueue != nil && len(*options.TaskQueue) > 0 {
+		eap.TaskQueueName = *options.TaskQueue
 	}
-	eap.ScheduleToCloseTimeout = options.ScheduleToCloseTimeout
-	eap.StartToCloseTimeout = options.StartToCloseTimeout
-	eap.ScheduleToStartTimeout = options.ScheduleToStartTimeout
-	eap.HeartbeatTimeout = options.HeartbeatTimeout
-	eap.WaitForCancellation = options.WaitForCancellation
-	eap.ActivityID = options.ActivityID
+	if options.ScheduleToCloseTimeout != nil {
+		eap.ScheduleToCloseTimeout = *options.ScheduleToCloseTimeout
+	}
+	if options.StartToCloseTimeout != nil {
+		eap.StartToCloseTimeout = *options.StartToCloseTimeout
+	}
+	if options.ScheduleToStartTimeout != nil {
+		eap.ScheduleToStartTimeout = *options.ScheduleToStartTimeout
+	}
+	if options.HeartbeatTimeout != nil {
+		eap.HeartbeatTimeout = *options.HeartbeatTimeout
+	}
+	if options.WaitForCancellation != nil {
+		eap.WaitForCancellation = *options.WaitForCancellation
+	}
+	if options.ActivityID != nil {
+		eap.ActivityID = *options.ActivityID
+	}
 	eap.RetryPolicy = convertToPBRetryPolicy(options.RetryPolicy)
-	eap.DisableEagerExecution = options.DisableEagerExecution
-	eap.VersioningIntent = options.VersioningIntent
+	if options.DisableEagerExecution != nil {
+		eap.DisableEagerExecution = *options.DisableEagerExecution
+	}
+	if options.VersioningIntent != nil {
+		eap.VersioningIntent = *options.VersioningIntent
+	}
 	return ctx1
 }
 
@@ -1808,17 +1843,22 @@ func WithLocalActivityOptions(ctx Context, options LocalActivityOptions) Context
 }
 
 func applyRetryPolicyDefaultsForLocalActivity(policy *RetryPolicy) *RetryPolicy {
+	backoffCoefficient := float64(2)
+	initialInterval := 1 * time.Second
+
 	if policy == nil {
 		policy = &RetryPolicy{}
 	}
-	if policy.BackoffCoefficient == 0 {
-		policy.BackoffCoefficient = 2
+	if policy.BackoffCoefficient == nil || (policy.BackoffCoefficient != nil && *policy.BackoffCoefficient == 0) {
+		policy.BackoffCoefficient = &backoffCoefficient
 	}
-	if policy.InitialInterval == 0 {
-		policy.InitialInterval = 1 * time.Second
+	if policy.InitialInterval == nil || (policy.InitialInterval != nil && *policy.InitialInterval == 0) {
+		policy.InitialInterval = &initialInterval
 	}
-	if policy.MaximumInterval == 0 {
-		policy.MaximumInterval = policy.InitialInterval * 100
+
+	if policy.MaximumInterval == nil || (policy.MaximumInterval != nil && *policy.MaximumInterval == 0) {
+		maximumInterval := *policy.InitialInterval * 100
+		policy.MaximumInterval = &maximumInterval
 	}
 	return policy
 }
@@ -1837,16 +1877,16 @@ func GetActivityOptions(ctx Context) ActivityOptions {
 		return ActivityOptions{}
 	}
 	return ActivityOptions{
-		TaskQueue:              opts.TaskQueueName,
-		ScheduleToCloseTimeout: opts.ScheduleToCloseTimeout,
-		ScheduleToStartTimeout: opts.ScheduleToStartTimeout,
-		StartToCloseTimeout:    opts.StartToCloseTimeout,
-		HeartbeatTimeout:       opts.HeartbeatTimeout,
-		WaitForCancellation:    opts.WaitForCancellation,
-		ActivityID:             opts.ActivityID,
+		TaskQueue:              &opts.TaskQueueName,
+		ScheduleToCloseTimeout: &opts.ScheduleToCloseTimeout,
+		ScheduleToStartTimeout: &opts.ScheduleToStartTimeout,
+		StartToCloseTimeout:    &opts.StartToCloseTimeout,
+		HeartbeatTimeout:       &opts.HeartbeatTimeout,
+		WaitForCancellation:    &opts.WaitForCancellation,
+		ActivityID:             &opts.ActivityID,
 		RetryPolicy:            convertFromPBRetryPolicy(opts.RetryPolicy),
-		DisableEagerExecution:  opts.DisableEagerExecution,
-		VersioningIntent:       opts.VersioningIntent,
+		DisableEagerExecution:  &opts.DisableEagerExecution,
+		VersioningIntent:       &opts.VersioningIntent,
 	}
 }
 
@@ -1918,11 +1958,28 @@ func convertToPBRetryPolicy(retryPolicy *RetryPolicy) *commonpb.RetryPolicy {
 		return nil
 	}
 
+	var maximumInterval *time.Duration
+	if retryPolicy.MaximumInterval != nil {
+		maximumInterval = retryPolicy.MaximumInterval
+	}
+	var initialInterval *time.Duration
+	if retryPolicy.InitialInterval != nil {
+		initialInterval = retryPolicy.InitialInterval
+	}
+	var backoffCoefficient float64
+	if retryPolicy.BackoffCoefficient != nil {
+		backoffCoefficient = *retryPolicy.BackoffCoefficient
+	}
+	var maximumAttempts int32
+	if retryPolicy.MaximumAttempts != nil {
+		maximumAttempts = *retryPolicy.MaximumAttempts
+	}
+
 	return &commonpb.RetryPolicy{
-		MaximumInterval:        &retryPolicy.MaximumInterval,
-		InitialInterval:        &retryPolicy.InitialInterval,
-		BackoffCoefficient:     retryPolicy.BackoffCoefficient,
-		MaximumAttempts:        retryPolicy.MaximumAttempts,
+		MaximumInterval:        maximumInterval,
+		InitialInterval:        initialInterval,
+		BackoffCoefficient:     backoffCoefficient,
+		MaximumAttempts:        maximumAttempts,
 		NonRetryableErrorTypes: retryPolicy.NonRetryableErrorTypes,
 	}
 }
@@ -1933,17 +1990,17 @@ func convertFromPBRetryPolicy(retryPolicy *commonpb.RetryPolicy) *RetryPolicy {
 	}
 
 	p := RetryPolicy{
-		BackoffCoefficient:     retryPolicy.BackoffCoefficient,
-		MaximumAttempts:        retryPolicy.MaximumAttempts,
+		BackoffCoefficient:     &retryPolicy.BackoffCoefficient,
+		MaximumAttempts:        &retryPolicy.MaximumAttempts,
 		NonRetryableErrorTypes: retryPolicy.NonRetryableErrorTypes,
 	}
 
 	// Avoid nil pointer dereferences
 	if v := retryPolicy.MaximumInterval; v != nil {
-		p.MaximumInterval = *v
+		p.MaximumInterval = v
 	}
 	if v := retryPolicy.InitialInterval; v != nil {
-		p.InitialInterval = *v
+		p.InitialInterval = v
 	}
 
 	return &p

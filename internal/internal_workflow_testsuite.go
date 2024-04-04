@@ -1129,7 +1129,6 @@ func (env *testWorkflowEnvironmentImpl) validateActivityScheduleAttributes(
 	attributes *commandpb.ScheduleActivityTaskCommandAttributes,
 	runTimeout time.Duration,
 ) error {
-
 	if attributes == nil {
 		return serviceerror.NewInvalidArgument("ScheduleActivityTaskCommandAttributes is not set on command.")
 	}
@@ -1214,7 +1213,6 @@ func (env *testWorkflowEnvironmentImpl) validatedTaskQueue(
 	taskQueue *taskqueuepb.TaskQueue,
 	defaultVal string,
 ) (*taskqueuepb.TaskQueue, error) {
-
 	if taskQueue == nil {
 		taskQueue = &taskqueuepb.TaskQueue{Kind: enumspb.TASK_QUEUE_KIND_NORMAL}
 	}
@@ -1342,11 +1340,16 @@ func (env *testWorkflowEnvironmentImpl) executeActivityWithRetryForTest(
 }
 
 func fromProtoRetryPolicy(p *commonpb.RetryPolicy) *RetryPolicy {
+	initialInterval := p.GetInitialInterval()
+	backoffCoefficient := p.GetBackoffCoefficient()
+	maximumInterval := p.GetMaximumInterval()
+	maximumAttempts := p.GetMaximumAttempts()
+
 	return &RetryPolicy{
-		InitialInterval:        common.DurationValue(p.GetInitialInterval()),
-		BackoffCoefficient:     p.GetBackoffCoefficient(),
-		MaximumInterval:        common.DurationValue(p.GetMaximumInterval()),
-		MaximumAttempts:        p.GetMaximumAttempts(),
+		InitialInterval:        initialInterval,
+		BackoffCoefficient:     &backoffCoefficient,
+		MaximumInterval:        maximumInterval,
+		MaximumAttempts:        &maximumAttempts,
 		NonRetryableErrorTypes: p.NonRetryableErrorTypes,
 	}
 }
@@ -1437,7 +1440,8 @@ func (env *testWorkflowEnvironmentImpl) RequestCancelLocalActivity(activityID Lo
 }
 
 func (env *testWorkflowEnvironmentImpl) handleActivityResult(activityID ActivityID, result interface{}, activityType string,
-	dataConverter converter.DataConverter) {
+	dataConverter converter.DataConverter,
+) {
 	env.logger.Debug(fmt.Sprintf("handleActivityResult: %T.", result),
 		tagActivityID, activityID, tagActivityType, activityType)
 	activityInfo := env.getActivityInfo(activityID, activityType)
@@ -1927,7 +1931,8 @@ func (env *testWorkflowEnvironmentImpl) newTestActivityTaskHandler(taskQueue str
 }
 
 func newTestActivityTask(workflowID, runID, workflowTypeName, namespace string,
-	attr *commandpb.ScheduleActivityTaskCommandAttributes) *workflowservice.PollActivityTaskQueueResponse {
+	attr *commandpb.ScheduleActivityTaskCommandAttributes,
+) *workflowservice.PollActivityTaskQueueResponse {
 	activityID := attr.GetActivityId()
 	now := time.Now()
 	task := &workflowservice.PollActivityTaskQueueResponse{
@@ -2439,7 +2444,8 @@ func (env *testWorkflowEnvironmentImpl) setStartWorkflowOptions(options StartWor
 }
 
 func newTestSessionEnvironment(testWorkflowEnvironment *testWorkflowEnvironmentImpl,
-	params *workerExecutionParameters, concurrentSessionExecutionSize int) *testSessionEnvironmentImpl {
+	params *workerExecutionParameters, concurrentSessionExecutionSize int,
+) *testSessionEnvironmentImpl {
 	resourceID := params.SessionResourceID
 	if resourceID == "" {
 		resourceID = "testResourceID"

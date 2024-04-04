@@ -224,9 +224,11 @@ func CompleteSession(ctx Context) {
 	sessionInfo.sessionCancelFunc()
 
 	// then execute then completion activity using the completionCtx, which is not canceled.
+	scheduleToStartTimeout := time.Second * 3
+	startToCloseTimeout := time.Second * 3
 	completionCtx := WithActivityOptions(sessionInfo.completionCtx, ActivityOptions{
-		ScheduleToStartTimeout: time.Second * 3,
-		StartToCloseTimeout:    time.Second * 3,
+		ScheduleToStartTimeout: &scheduleToStartTimeout,
+		StartToCloseTimeout:    &startToCloseTimeout,
 	})
 
 	// even though the creation activity has been canceled, the session worker doesn't know. The worker will wait until
@@ -293,11 +295,15 @@ func createSession(ctx Context, creationTaskqueue string, options *SessionOption
 	// NewApplicationError(errTooManySessionsMsg). Therefore we make sure to
 	// disable retrying for start-to-close and heartbeat timeouts which can occur
 	// when attempting to retry a create-session on a different worker.
+	initialInterval := time.Second
+	backoffCoefficient := 1.1
+	maximumInterval := time.Second * 10
+	maximumAttempts := int32(0)
 	retryPolicy := &RetryPolicy{
-		InitialInterval:        time.Second,
-		BackoffCoefficient:     1.1,
-		MaximumInterval:        time.Second * 10,
-		MaximumAttempts:        0,
+		InitialInterval:        &initialInterval,
+		BackoffCoefficient:     &backoffCoefficient,
+		MaximumInterval:        &maximumInterval,
+		MaximumAttempts:        &maximumAttempts,
 		NonRetryableErrorTypes: []string{"TemporalTimeout:StartToClose", "TemporalTimeout:Heartbeat"},
 	}
 
@@ -306,10 +312,10 @@ func createSession(ctx Context, creationTaskqueue string, options *SessionOption
 		heartbeatTimeout = options.HeartbeatTimeout
 	}
 	ao := ActivityOptions{
-		TaskQueue:              creationTaskqueue,
-		ScheduleToStartTimeout: options.CreationTimeout,
-		StartToCloseTimeout:    options.ExecutionTimeout,
-		HeartbeatTimeout:       heartbeatTimeout,
+		TaskQueue:              &creationTaskqueue,
+		ScheduleToStartTimeout: &options.CreationTimeout,
+		StartToCloseTimeout:    &options.ExecutionTimeout,
+		HeartbeatTimeout:       &heartbeatTimeout,
 	}
 	if retryable {
 		ao.RetryPolicy = retryPolicy
